@@ -1,0 +1,160 @@
+_format_version: "3.0"
+
+# ─── Services ───────────────────────────────────────────────────
+#
+# No strip_path — Kong acts as a transparent proxy.
+# Frontend paths stay exactly as they are; only the base URL changes
+# from individual service ports to the single Kong port.
+#
+# Public:  /auth/*  /ping
+# Protected (pre-function auth): /admin/*  /saveExpense*  /api/v1/*
+
+services:
+
+  # Auth — login, signup, refresh (public)
+  - name: auth-service
+    url: http://auth-service:8080
+    routes:
+      - name: auth-public
+        paths:
+          - /auth
+        strip_path: false
+
+  # Auth — /ping (public; called by frontend after login)
+  - name: auth-ping-service
+    url: http://auth-service:8080
+    routes:
+      - name: auth-ping
+        paths:
+          - /ping
+        strip_path: false
+
+  # Auth — admin routes (protected)
+  - name: auth-admin-service
+    url: http://auth-service:8080
+    routes:
+      - name: auth-admin
+        paths:
+          - /admin
+        strip_path: false
+
+  # Expense Store (protected)
+  - name: expense-service
+    url: http://expense-store:8083
+    routes:
+      - name: expense-routes
+        paths:
+          - /saveExpense
+        strip_path: false
+
+  # AI Service (protected)
+  - name: ai-service
+    url: http://ai-service:8000
+    routes:
+      - name: ai-routes
+        paths:
+          - /api/v1
+        strip_path: false
+
+# ─── Plugins ────────────────────────────────────────────────────
+
+plugins:
+
+  # Global CORS (handles preflight for every route)
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+      headers:
+        - Content-Type
+        - Authorization
+        - user-id
+      exposed_headers:
+        - X-User-Id
+        - X-User-Name
+      credentials: true
+      max_age: 3600
+
+  # ── Auth gate (pre-function) for protected services ──────────
+  #
+  # Reads Authorization header → calls auth-service /ping →
+  # if 200, copies X-User-Id into the upstream "user-id" header
+  # so downstream services receive it transparently.
+
+  - name: pre-function
+    service: auth-admin-service
+    config:
+      access:
+        - |
+          if kong.request.get_method() == "OPTIONS" then return end
+          local http = require("resty.http")
+          local httpc = http.new()
+          local auth = kong.request.get_header("Authorization")
+          if not auth then
+            return kong.response.exit(401, '{"message":"Missing Authorization header"}', {["Content-Type"]="application/json"})
+          end
+          local res, err = httpc:request_uri("http://auth-service:8080/ping", {
+            method = "GET",
+            headers = { ["Authorization"] = auth },
+          })
+          if not res or res.status ~= 200 then
+            return kong.response.exit(401, '{"message":"Unauthorized"}', {["Content-Type"]="application/json"})
+          end
+          local uid = res.headers["X-User-Id"]
+          if uid then
+            kong.service.request.set_header("user-id", uid)
+          end
+
+  - name: pre-function
+    service: expense-service
+    config:
+      access:
+        - |
+          if kong.request.get_method() == "OPTIONS" then return end
+          local http = require("resty.http")
+          local httpc = http.new()
+          local auth = kong.request.get_header("Authorization")
+          if not auth then
+            return kong.response.exit(401, '{"message":"Missing Authorization header"}', {["Content-Type"]="application/json"})
+          end
+          local res, err = httpc:request_uri("http://auth-service:8080/ping", {
+            method = "GET",
+            headers = { ["Authorization"] = auth },
+          })
+          if not res or res.status ~= 200 then
+            return kong.response.exit(401, '{"message":"Unauthorized"}', {["Content-Type"]="application/json"})
+          end
+          local uid = res.headers["X-User-Id"]
+          if uid then
+            kong.service.request.set_header("user-id", uid)
+          end
+
+  - name: pre-function
+    service: ai-service
+    config:
+      access:
+        - |
+          if kong.request.get_method() == "OPTIONS" then return end
+          local http = require("resty.http")
+          local httpc = http.new()
+          local auth = kong.request.get_header("Authorization")
+          if not auth then
+            return kong.response.exit(401, '{"message":"Missing Authorization header"}', {["Content-Type"]="application/json"})
+          end
+          local res, err = httpc:request_uri("http://auth-service:8080/ping", {
+            method = "GET",
+            headers = { ["Authorization"] = auth },
+          })
+          if not res or res.status ~= 200 then
+            return kong.response.exit(401, '{"message":"Unauthorized"}', {["Content-Type"]="application/json"})
+          end
+          local uid = res.headers["X-User-Id"]
+          if uid then
+            kong.service.request.set_header("user-id", uid)
+          end

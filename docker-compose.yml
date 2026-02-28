@@ -136,6 +136,32 @@ services:
       MODEL_NAME: gpt-4o-mini
     restart: on-failure
 
+  # ─── Kong API Gateway ────────────────────────────────────────────────────
+  kong:
+    build: ./kong-gateway
+    container_name: kong
+    ports:
+      - "9000:8000"   # proxy port (Kong listens on 8000 internally)
+      - "9001:8001"   # admin API (optional, for debugging)
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /kong/declarative/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+      KONG_LOG_LEVEL: info
+      KONG_UNTRUSTED_LUA: "on"
+    depends_on:
+      - auth-service
+      - user-service
+      - expense-store
+      - ai-service
+    networks:
+      - kharcha-network
+    restart: on-failure
+
 networks:
   kharcha-network:
     driver: bridge

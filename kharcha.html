@@ -478,11 +478,13 @@ body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-
 
 <script>
 // ── CONFIG ──
+// All traffic flows through Kong API Gateway
+const KONG = 'http://localhost:9000';
 const URLS = {
-  auth: 'http://localhost:8080',
-  expense: 'http://localhost:8083',
-  user: 'http://localhost:8081',
-  ai: 'http://localhost:8000',
+  auth: KONG,
+  expense: KONG,
+  user: KONG,
+  ai: KONG,
 };
 
 // ── STATE ──
@@ -584,8 +586,7 @@ async function doLogin() {
     // Get userId
     const pingRes = await fetch(`${URLS.auth}/ping`,{headers:{'Authorization':'Bearer '+token}});
     if(pingRes.ok) {
-      const uid = await pingRes.json();
-      userId = String(uid);
+      userId = pingRes.headers.get('X-User-Id') || '';
       localStorage.setItem('kharcha_uid', userId);
     }
     localStorage.setItem('kharcha_user', username);
@@ -750,7 +751,7 @@ async function parseAI() {
   try {
     const res = await fetch(`${URLS.ai}/api/v1/analyze`,{
       method:'POST',
-      headers:{'Content-Type':'application/json','user-id':userId},
+      headers:hdrs(),
       body:JSON.stringify({message:msg})
     });
     if(!res.ok) throw new Error(`AI service error: ${res.status}`);

@@ -18,7 +18,7 @@ def delivery_report(err, msg):
     if err is not None:
         logger.error("Kafka delivery failed: %s", err)
     else:
-        logger.info("Kafka message delivered to %s [partition %s]", msg.topic(), msg.partition())
+        logger.info("Kafka message delivered to topic name : %s [partition %s]", msg.topic(), msg.partition())
 
 def publish_event(event_dict: dict):
     try:
