@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Kharcha DB Viewer</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #0d0f14;
+  --bg2: #13161e;
+  --bg3: #1a1e28;
+  --surface: #1e2230;
+  --border: #2a2f3d;
+  --border2: #363d52;
+  --acc: #00d4aa;
+  --acc2: #7c6af7;
+  --acc3: #f5a623;
+  --acc4: #e8445a;
+  --text: #e8eaf0;
+  --muted: #6b7280;
+  --muted2: #4b5268;
+  --green: #22c55e;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'JetBrains Mono',monospace;min-height:100vh;overflow-x:hidden;}
+
+/* NOISE OVERLAY */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:0;opacity:0.4;
+}
+
+/* HEADER */
+.header{
+  position:sticky;top:0;z-index:100;
+  background:rgba(13,15,20,0.9);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:0 32px;height:64px;
+  display:flex;align-items:center;gap:20px;
+}
+.logo{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:var(--acc);letter-spacing:-0.5px;}
+.logo span{color:var(--muted);}
+.header-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+
+.btn-refresh{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 20px;border-radius:8px;
+  background:var(--acc);color:#000;
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;
+  border:none;cursor:pointer;transition:all 0.2s;letter-spacing:0.5px;
+}
+.btn-refresh:hover{background:#00f0c0;transform:translateY(-1px);box-shadow:0 4px 20px rgba(0,212,170,0.3);}
+.btn-refresh:active{transform:translateY(0);}
+.btn-refresh.loading{opacity:0.6;cursor:not-allowed;}
+
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite;}
+.status-dot.err{background:var(--acc4);box-shadow:0 0 8px var(--acc4);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+.last-refresh{font-size:11px;color:var(--muted);}
+
+/* MAIN */
+.main{padding:28px 32px;max-width:1400px;margin:0 auto;position:relative;z-index:1;}
+
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:32px;}
+.stat-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+  padding:18px 20px;position:relative;overflow:hidden;
+  transition:border-color 0.2s;
+}
+.stat-card:hover{border-color:var(--border2);}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.stat-card:nth-child(1)::before{background:var(--acc);}
+.stat-card:nth-child(2)::before{background:var(--acc2);}
+.stat-card:nth-child(3)::before{background:var(--acc3);}
+.stat-card:nth-child(4)::before{background:var(--acc4);}
+.stat-card:nth-child(5)::before{background:var(--green);}
+.stat-card:nth-child(6)::before{background:#f472b6;}
+.stat-val{font-family:'Syne',sans-serif;font-weight:800;font-size:28px;line-height:1;margin-bottom:6px;}
+.stat-val.c1{color:var(--acc);}
+.stat-val.c2{color:var(--acc2);}
+.stat-val.c3{color:var(--acc3);}
+.stat-val.c4{color:var(--acc4);}
+.stat-val.c5{color:var(--green);}
+.stat-val.c6{color:#f472b6;}
+.stat-lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:500;}
+
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:0;}
+.tab{
+  padding:10px 20px;border-radius:8px 8px 0 0;cursor:pointer;
+  font-size:12px;font-weight:700;color:var(--muted);
+  background:none;border:none;border-bottom:2px solid transparent;
+  transition:all 0.15s;letter-spacing:0.3px;font-family:'JetBrains Mono',monospace;
+  position:relative;bottom:-1px;
+}
+.tab:hover{color:var(--text);background:var(--bg3);}
+.tab.active{color:var(--acc);border-bottom-color:var(--acc);background:var(--bg2);}
+.tab .cnt{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;border-radius:4px;font-size:10px;
+  background:var(--bg3);color:var(--muted);margin-left:6px;
+}
+.tab.active .cnt{background:rgba(0,212,170,0.15);color:var(--acc);}
+
+/* TABLE SECTION */
+.table-section{display:none;}
+.table-section.active{display:block;}
+
+.section-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:14px;
+}
+.section-title{
+  font-family:'Syne',sans-serif;font-weight:700;font-size:16px;
+  display:flex;align-items:center;gap:10px;
+}
+.section-badge{
+  font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;
+  text-transform:uppercase;letter-spacing:0.5px;font-family:'JetBrains Mono',monospace;
+}
+.badge-teal{background:rgba(0,212,170,0.15);color:var(--acc);}
+.badge-purple{background:rgba(124,106,247,0.15);color:var(--acc2);}
+.badge-orange{background:rgba(245,166,35,0.15);color:var(--acc3);}
+.badge-red{background:rgba(232,68,90,0.15);color:var(--acc4);}
+.badge-green{background:rgba(34,197,94,0.15);color:var(--green);}
+
+.search-box{
+  padding:7px 14px;border-radius:8px;
+  background:var(--bg3);border:1px solid var(--border);
+  font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text);
+  outline:none;width:220px;transition:border-color 0.2s;
+}
+.search-box:focus{border-color:var(--acc);}
+.search-box::placeholder{color:var(--muted2);}
+
+/* TABLE */
+.table-wrap{
+  background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+  overflow:hidden;overflow-x:auto;
+}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead tr{background:var(--bg3);border-bottom:1px solid var(--border);}
+thead th{
+  padding:12px 16px;text-align:left;
+  font-size:10px;font-weight:700;color:var(--muted);
+  text-transform:uppercase;letter-spacing:1px;white-space:nowrap;
+}
+tbody tr{border-bottom:1px solid var(--border);transition:background 0.1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--bg3);}
+tbody td{padding:11px 16px;color:var(--text);vertical-align:middle;}
+
+/* CELL TYPES */
+.cell-id{color:var(--muted);font-size:11px;}
+.cell-mono{font-family:'JetBrains Mono',monospace;}
+.cell-email{color:var(--acc2);}
+.cell-username{color:var(--acc);}
+.cell-token{color:var(--muted);font-size:11px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cell-date{color:var(--muted);font-size:11px;}
+.cell-amount{font-family:'Syne',sans-serif;font-weight:700;color:var(--green);}
+.cell-null{color:var(--muted2);font-style:italic;font-size:11px;}
+
+/* PILL BADGES */
+.pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:0.3px;text-transform:uppercase;}
+.pill-ai{background:rgba(0,212,170,0.15);color:var(--acc);}
+.pill-you{background:rgba(124,106,247,0.15);color:var(--acc2);}
+.pill-food{background:rgba(245,166,35,0.15);color:var(--acc3);}
+.pill-travel{background:rgba(96,165,250,0.2);color:#60a5fa;}
+.pill-shopping{background:rgba(244,114,182,0.2);color:#f472b6;}
+.pill-health{background:rgba(34,197,94,0.15);color:var(--green);}
+.pill-entertainment{background:rgba(232,68,90,0.15);color:var(--acc4);}
+.pill-utilities{background:rgba(251,191,36,0.15);color:#fbbf24;}
+.pill-education{background:rgba(167,139,250,0.2);color:#a78bfa;}
+.pill-other{background:var(--bg3);color:var(--muted);}
+.pill-role{background:rgba(124,106,247,0.15);color:var(--acc2);}
+.pill-admin{background:rgba(232,68,90,0.15);color:var(--acc4);}
+
+/* EXPIRY STATUS */
+.expiry-ok{color:var(--green);}
+.expiry-exp{color:var(--acc4);}
+
+/* LOADING / EMPTY */
+.state-row td{text-align:center;padding:40px;color:var(--muted);font-size:13px;}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--acc);border-radius:50%;animation:spin 0.6s linear infinite;margin-right:8px;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* MANY TO MANY SECTION */
+.m2m-header{
+  display:flex;align-items:center;gap:12px;margin-bottom:16px;
+}
+.m2m-arrow{color:var(--muted);font-size:14px;}
+.m2m-entity{
+  background:var(--bg3);border:1px solid var(--border);border-radius:8px;
+  padding:6px 14px;font-size:12px;font-weight:700;
+}
+.m2m-entity.users{color:var(--acc);}
+.m2m-entity.roles{color:var(--acc2);}
+.m2m-entity.junction{color:var(--acc3);border-color:rgba(245,166,35,0.3);}
+
+/* ERROR */
+.error-box{
+  background:rgba(232,68,90,0.1);border:1px solid rgba(232,68,90,0.3);
+  border-radius:8px;padding:14px 18px;
+  font-size:12px;color:var(--acc4);margin-bottom:16px;display:none;
+}
+.error-box.show{display:block;}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--muted);}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .stats-row{grid-template-columns:repeat(3,1fr);}
+  .main{padding:16px;}
+  .header{padding:0 16px;}
+}
+@media(max-width:600px){
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="logo">kharcha<span>.db</span></div>
+    <div class="header-sub">MySQL Database Viewer</div>
+  </div>
+  <div class="header-right">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="last-refresh" id="lastRefresh">Never refreshed</span>
+    <button class="btn-refresh" id="refreshBtn" onclick="loadAll()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0019.49 15"/></svg>
+      Refresh All
+    </button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- STATS -->
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card"><div class="stat-val c1" id="s-users">—</div><div class="stat-lbl">Auth Users</div></div>
+    <div class="stat-card"><div class="stat-val c2" id="s-roles">—</div><div class="stat-lbl">Roles</div></div>
+    <div class="stat-card"><div class="stat-val c3" id="s-tokens">—</div><div class="stat-lbl">Active Tokens</div></div>
+    <div class="stat-card"><div class="stat-val c4" id="s-expenses">—</div><div class="stat-lbl">Expenses</div></div>
+    <div class="stat-card"><div class="stat-val c5" id="s-spent">—</div><div class="stat-lbl">Total Spent</div></div>
+    <div class="stat-card"><div class="stat-val c6" id="s-ai">—</div><div class="stat-lbl">AI Detected</div></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('users')">👤 Users <span class="cnt" id="cnt-users">0</span></button>
+    <button class="tab" onclick="switchTab('roles')">🔑 Roles <span class="cnt" id="cnt-roles">0</span></button>
+    <button class="tab" onclick="switchTab('user-roles')">🔗 User ↔ Roles <span class="cnt" id="cnt-user-roles">0</span></button>
+    <button class="tab" onclick="switchTab('tokens')">🎟️ Tokens <span class="cnt" id="cnt-tokens">0</span></button>
+    <button class="tab" onclick="switchTab('expenses')">💸 Expenses <span class="cnt" id="cnt-expenses">0</span></button>
+  </div>
+
+  <!-- USERS TABLE -->
+  <div class="table-section active" id="tab-users">
+    <div class="section-header">
+      <div class="section-title">
+        Auth Service — Users
+        <span class="section-badge badge-teal">auth.users</span>
+      </div>
+      <input class="search-box" placeholder="Search users..." oninput="filterTable('users-tbody', this.value)"/>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>user_id</th><th>name</th><th>user_name</th><th>email</th>
+        </tr></thead>
+        <tbody id="users-tbody"><tr class="state-row"><td colspan="4"><span class="spin"></span>Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ROLES TABLE -->
+  <div class="table-section" id="tab-roles">
+    <div class="section-header">
+      <div class="section-title">
+        Roles
+        <span class="section-badge badge-purple">auth.roles</span>
+      </div>
+      <input class="search-box" placeholder="Search roles..." oninput="filterTable('roles-tbody', this.value)"/>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>role_id</th><th>role_name</th></tr></thead>
+        <tbody id="roles-tbody"><tr class="state-row"><td colspan="2"><span class="spin"></span>Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- USER ROLES (Many-to-Many) TABLE -->
+  <div class="table-section" id="tab-user-roles">
+    <div class="section-header">
+      <div class="section-title">
+        Many-to-Many: Users ↔ Roles
+        <span class="section-badge badge-orange">auth.user_roles</span>
+      </div>
+      <input class="search-box" placeholder="Search..." oninput="filterTable('user-roles-tbody', this.value)"/>
+    </div>
+    <div class="m2m-header">
+      <div class="m2m-entity users">users</div>
+      <div class="m2m-arrow">⟷</div>
+      <div class="m2m-entity junction">user_roles</div>
+      <div class="m2m-arrow">⟷</div>
+      <div class="m2m-entity roles">roles</div>
+      <span style="font-size:11px;color:var(--muted);margin-left:4px">JOIN table showing resolved relationships</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>user_id</th><th>user_name</th><th>full_name</th><th>email</th><th>role_id</th><th>role_name</th>
+        </tr></thead>
+        <tbody id="user-roles-tbody"><tr class="state-row"><td colspan="6"><span class="spin"></span>Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TOKENS TABLE -->
+  <div class="table-section" id="tab-tokens">
+    <div class="section-header">
+      <div class="section-title">
+        Refresh Tokens
+        <span class="section-badge badge-red">auth.tokens</span>
+      </div>
+      <input class="search-box" placeholder="Search tokens..." oninput="filterTable('tokens-tbody', this.value)"/>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>id</th><th>user_name</th><th>email</th><th>token preview</th><th>expiry_date</th><th>status</th>
+        </tr></thead>
+        <tbody id="tokens-tbody"><tr class="state-row"><td colspan="6"><span class="spin"></span>Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EXPENSES TABLE -->
+  <div class="table-section" id="tab-expenses">
+    <div class="section-header">
+      <div class="section-title">
+        Expenses
+        <span class="section-badge badge-green">expensestore.expense_info</span>
+      </div>
+      <input class="search-box" placeholder="Search expenses..." oninput="filterTable('expenses-tbody', this.value)"/>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>id</th><th>user_id</th><th>merchant</th><th>amount</th><th>currency</th>
+          <th>category</th><th>source</th><th>description</th><th>expense_date</th><th>created_at</th>
+        </tr></thead>
+        <tbody id="expenses-tbody"><tr class="state-row"><td colspan="10"><span class="spin"></span>Loading...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const API = 'http://localhost:8899';
+
+// ── TAB SWITCHING ──
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.table-section').forEach(s => s.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ── FILTER ──
+function filterTable(tbodyId, query) {
+  const q = query.toLowerCase();
+  document.querySelectorAll('#' + tbodyId + ' tr').forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+}
+
+// ── HELPERS ──
+function cell(val, cls = '') {
+  if (val === null || val === undefined || val === '') return `<td class="cell-null">null</td>`;
+  return `<td class="${cls}">${val}</td>`;
+}
+function pill(val, base) {
+  if (!val) return `<td class="cell-null">null</td>`;
+  const cls = 'pill-' + val.toLowerCase().replace('role_', '');
+  return `<td><span class="pill ${cls}">${val}</span></td>`;
+}
+function setCount(id, n) {
+  document.getElementById(id).textContent = n;
+}
+function empty(cols, msg) {
+  return `<tr class="state-row"><td colspan="${cols}">${msg}</td></tr>`;
+}
+function fmtDate(d) {
+  if (!d) return '<td class="cell-null">null</td>';
+  return `<td class="cell-date">${String(d).replace('T', ' ').slice(0, 19)}</td>`;
+}
+
+// ── LOAD ALL ──
+async function loadAll() {
+  const btn = document.getElementById('refreshBtn');
+  const dot = document.getElementById('statusDot');
+  const errBox = document.getElementById('errorBox');
+  btn.classList.add('loading');
+  btn.disabled = true;
+  errBox.classList.remove('show');
+
+  try {
+    await Promise.all([
+      loadStats(),
+      loadUsers(),
+      loadRoles(),
+      loadUserRoles(),
+      loadTokens(),
+      loadExpenses(),
+    ]);
+    dot.classList.remove('err');
+    document.getElementById('lastRefresh').textContent =
+      'Last refresh: ' + new Date().toLocaleTimeString();
+  } catch (e) {
+    dot.classList.add('err');
+    errBox.textContent = '⚠ Connection error: ' + e.message + ' — Is the Python server running on port 8899?';
+    errBox.classList.add('show');
+  } finally {
+    btn.classList.remove('loading');
+    btn.disabled = false;
+  }
+}
+
+async function apiFetch(path) {
+  const res = await fetch(API + path);
+  if (!res.ok) throw new Error(res.statusText);
+  return res.json();
+}
+
+// ── STATS ──
+async function loadStats() {
+  const d = await apiFetch('/api/stats');
+  document.getElementById('s-users').textContent = d.users;
+  document.getElementById('s-roles').textContent = d.roles;
+  document.getElementById('s-tokens').textContent = d.tokens;
+  document.getElementById('s-expenses').textContent = d.expenses;
+  document.getElementById('s-spent').textContent = '₹' + Number(d.total_spent).toLocaleString('en-IN', {maximumFractionDigits: 0});
+  document.getElementById('s-ai').textContent = d.ai_expenses;
+}
+
+// ── USERS ──
+async function loadUsers() {
+  const data = await apiFetch('/api/users');
+  setCount('cnt-users', data.length);
+  const tbody = document.getElementById('users-tbody');
+  if (!data.length) { tbody.innerHTML = empty(4, 'No users found'); return; }
+  tbody.innerHTML = data.map(r => `<tr>
+    ${cell(r.user_id, 'cell-id')}
+    ${cell(r.name)}
+    ${cell(r.user_name, 'cell-username')}
+    ${cell(r.email, 'cell-email')}
+  </tr>`).join('');
+}
+
+// ── ROLES ──
+async function loadRoles() {
+  const data = await apiFetch('/api/roles');
+  setCount('cnt-roles', data.length);
+  const tbody = document.getElementById('roles-tbody');
+  if (!data.length) { tbody.innerHTML = empty(2, 'No roles found'); return; }
+  tbody.innerHTML = data.map(r => `<tr>
+    ${cell(r.role_id, 'cell-id')}
+    ${pill(r.role_name)}
+  </tr>`).join('');
+}
+
+// ── USER ROLES ──
+async function loadUserRoles() {
+  const data = await apiFetch('/api/user-roles');
+  setCount('cnt-user-roles', data.length);
+  const tbody = document.getElementById('user-roles-tbody');
+  if (!data.length) { tbody.innerHTML = empty(6, 'No user-role mappings found'); return; }
+  tbody.innerHTML = data.map(r => `<tr>
+    ${cell(r.user_id, 'cell-id')}
+    ${cell(r.user_name, 'cell-username')}
+    ${cell(r.full_name)}
+    ${cell(r.email, 'cell-email')}
+    ${cell(r.role_id, 'cell-id')}
+    ${pill(r.role_name)}
+  </tr>`).join('');
+}
+
+// ── TOKENS ──
+async function loadTokens() {
+  const data = await apiFetch('/api/tokens');
+  setCount('cnt-tokens', data.length);
+  const tbody = document.getElementById('tokens-tbody');
+  if (!data.length) { tbody.innerHTML = empty(6, 'No tokens found'); return; }
+  const now = new Date();
+  tbody.innerHTML = data.map(r => {
+    const expiry = new Date(r.expiry_date);
+    const expired = expiry < now;
+    const statusPill = expired
+      ? `<span class="pill" style="background:rgba(232,68,90,0.15);color:var(--acc4)">EXPIRED</span>`
+      : `<span class="pill" style="background:rgba(34,197,94,0.15);color:var(--green)">VALID</span>`;
+    return `<tr>
+      ${cell(r.id, 'cell-id')}
+      ${cell(r.user_name, 'cell-username')}
+      ${cell(r.email, 'cell-email')}
+      <td class="cell-token" title="${r.token_preview}">${r.token_preview}</td>
+      <td class="${expired ? 'expiry-exp' : 'expiry-ok'} cell-date">${String(r.expiry_date).replace('T',' ').slice(0,19)}</td>
+      <td>${statusPill}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── EXPENSES ──
+async function loadExpenses() {
+  const data = await apiFetch('/api/expenses');
+  setCount('cnt-expenses', data.length);
+  const tbody = document.getElementById('expenses-tbody');
+  if (!data.length) { tbody.innerHTML = empty(10, 'No expenses found'); return; }
+  tbody.innerHTML = data.map(r => `<tr>
+    ${cell(r.id, 'cell-id')}
+    ${cell(r.user_id, 'cell-id')}
+    ${cell(r.merchant)}
+    <td class="cell-amount">₹${Number(r.amount).toLocaleString('en-IN',{minimumFractionDigits:2})}</td>
+    ${cell(r.currency)}
+    ${pill(r.category)}
+    <td><span class="pill ${r.source === 'AI' ? 'pill-ai' : 'pill-you'}">${r.source}</span></td>
+    ${cell(r.description || null)}
+    ${fmtDate(r.expense_date)}
+    ${fmtDate(r.created_at)}
+  </tr>`).join('');
+}
+
+// ── AUTO LOAD ON START ──
+loadAll();
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+openai
+confluent-kafka
+pydantic
+pydantic-settings
+python-dotenv

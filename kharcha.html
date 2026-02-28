@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Kharcha — Track Every Rupee</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@300;400;600;700;900&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #faf8f4;
+  --bg2: #f4f0e8;
+  --surface: #ffffff;
+  --border: #e8e0d0;
+  --border2: #d4c9b0;
+  --acc: #e8580c;
+  --acc2: #1a472a;
+  --acc3: #f5c842;
+  --acc-light: #fff0e8;
+  --text: #1c1a17;
+  --muted: #7a7060;
+  --muted2: #a89e88;
+  --success: #1a7a3c;
+  --danger: #c0392b;
+  --shadow: 0 2px 20px rgba(28,26,23,0.08);
+  --shadow-lg: 0 8px 40px rgba(28,26,23,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-height:100vh;}
+
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh;}
+.screen.active{display:flex;}
+
+/* ── AUTH SCREENS ── */
+.auth-wrap{
+  flex:1;display:flex;
+  background: linear-gradient(135deg, #faf8f4 0%, #f0ead8 100%);
+}
+.auth-left{
+  flex:1;display:flex;flex-direction:column;justify-content:center;
+  padding:60px;max-width:480px;
+  background:var(--surface);
+  box-shadow: 4px 0 40px rgba(28,26,23,0.06);
+}
+.auth-right{
+  flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;
+  padding:60px;position:relative;overflow:hidden;
+}
+.auth-right::before{
+  content:'';position:absolute;
+  width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle, rgba(232,88,12,0.08) 0%, transparent 70%);
+  top:-100px;right:-100px;
+}
+.auth-right::after{
+  content:'';position:absolute;
+  width:400px;height:400px;border-radius:50%;
+  background:radial-gradient(circle, rgba(26,71,42,0.06) 0%, transparent 70%);
+  bottom:-80px;left:-80px;
+}
+
+.brand{margin-bottom:40px;}
+.brand-name{
+  font-family:'Fraunces',serif;font-weight:900;font-size:34px;
+  color:var(--acc);letter-spacing:-1px;line-height:1;
+}
+.brand-tag{font-size:13px;color:var(--muted);font-weight:500;margin-top:4px;}
+
+.auth-title{font-family:'Fraunces',serif;font-weight:700;font-size:28px;margin-bottom:6px;line-height:1.2;}
+.auth-sub{font-size:14px;color:var(--muted);margin-bottom:32px;}
+
+.form-group{margin-bottom:18px;}
+.form-label{display:block;font-size:12px;font-weight:700;color:var(--text);letter-spacing:0.5px;margin-bottom:6px;text-transform:uppercase;}
+.form-input{
+  width:100%;padding:12px 16px;
+  border:1.5px solid var(--border);border-radius:10px;
+  background:var(--bg);font-family:'Nunito',sans-serif;font-size:14px;
+  color:var(--text);outline:none;transition:all 0.2s;
+}
+.form-input:focus{border-color:var(--acc);background:var(--surface);box-shadow:0 0 0 3px rgba(232,88,12,0.1);}
+.form-input::placeholder{color:var(--muted2);}
+
+.btn{width:100%;padding:13px;border-radius:10px;font-family:'Nunito',sans-serif;font-weight:700;font-size:15px;cursor:pointer;border:none;transition:all 0.2s;letter-spacing:0.3px;}
+.btn-primary{background:var(--acc);color:#fff;}
+.btn-primary:hover{background:#cc4c09;transform:translateY(-1px);box-shadow:0 4px 16px rgba(232,88,12,0.35);}
+.btn-primary:active{transform:translateY(0);}
+.btn-outline{background:transparent;color:var(--acc);border:2px solid var(--acc);}
+.btn-outline:hover{background:var(--acc-light);}
+.btn-sm{width:auto;padding:8px 18px;font-size:13px;}
+.btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border);}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text);}
+.btn-green{background:var(--acc2);color:#fff;}
+.btn-green:hover{background:#153d22;transform:translateY(-1px);}
+
+.auth-switch{text-align:center;margin-top:20px;font-size:13px;color:var(--muted);}
+.auth-switch a{color:var(--acc);font-weight:700;cursor:pointer;text-decoration:none;}
+
+.err-msg{background:#fff0ee;border:1px solid #f5c4bb;color:var(--danger);padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none;}
+.err-msg.show{display:block;}
+
+/* AUTH RIGHT CONTENT */
+.hero-number{font-family:'Fraunces',serif;font-size:90px;font-weight:900;color:var(--acc);opacity:0.15;line-height:1;position:absolute;top:40px;right:40px;}
+.hero-cards{position:relative;z-index:1;}
+.hero-card{
+  background:var(--surface);border-radius:16px;padding:20px 24px;
+  box-shadow:var(--shadow-lg);margin-bottom:14px;
+  animation:floatIn 0.6s ease both;
+  display:flex;align-items:center;gap:16px;min-width:280px;
+}
+.hero-card:nth-child(2){animation-delay:0.15s;transform:translateX(20px);}
+.hero-card:nth-child(3){animation-delay:0.3s;}
+@keyframes floatIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.hero-icon{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.hero-amt{font-family:'Fraunces',serif;font-weight:700;font-size:18px;}
+.hero-lbl{font-size:12px;color:var(--muted);}
+
+/* ── DASHBOARD ── */
+#screen-app{flex-direction:column;}
+.app-nav{
+  height:60px;background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 28px;gap:20px;
+  position:sticky;top:0;z-index:100;box-shadow:0 1px 8px rgba(28,26,23,0.06);
+}
+.nav-brand{font-family:'Fraunces',serif;font-weight:900;font-size:22px;color:var(--acc);margin-right:12px;}
+.nav-tabs{display:flex;gap:4px;flex:1;}
+.nav-tab{padding:7px 16px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);transition:all 0.15s;border:none;background:none;}
+.nav-tab:hover{background:var(--bg);color:var(--text);}
+.nav-tab.active{background:var(--acc-light);color:var(--acc);}
+.nav-right{display:flex;align-items:center;gap:12px;margin-left:auto;}
+.user-pill{display:flex;align-items:center;gap:8px;background:var(--bg);padding:6px 14px;border-radius:20px;font-size:13px;font-weight:600;}
+.user-avatar{width:28px;height:28px;background:var(--acc);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px;font-weight:700;}
+
+.app-content{flex:1;padding:28px;max-width:1100px;margin:0 auto;width:100%;}
+
+/* APP PAGES */
+.app-page{display:none;}
+.app-page.active{display:block;}
+
+/* OVERVIEW */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px;}
+.stat-tile{
+  background:var(--surface);border-radius:14px;padding:22px 24px;
+  box-shadow:var(--shadow);border:1px solid var(--border);
+  position:relative;overflow:hidden;
+}
+.stat-tile::after{content:'';position:absolute;top:-20px;right:-20px;width:80px;height:80px;border-radius:50%;opacity:0.06;}
+.stat-tile.orange::after{background:var(--acc);}
+.stat-tile.green::after{background:var(--acc2);}
+.stat-tile.yellow::after{background:var(--acc3);}
+.tile-val{font-family:'Fraunces',serif;font-weight:700;font-size:32px;line-height:1;}
+.tile-val.orange{color:var(--acc);}
+.tile-val.green{color:var(--acc2);}
+.tile-val.yellow{color:#b8920a;}
+.tile-lbl{font-size:12px;color:var(--muted);font-weight:600;margin-top:6px;text-transform:uppercase;letter-spacing:0.5px;}
+.tile-sub{font-size:12px;color:var(--muted2);margin-top:4px;}
+
+/* EXPENSE LIST */
+.section-title{font-family:'Fraunces',serif;font-weight:700;font-size:20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;}
+.expense-list{display:flex;flex-direction:column;gap:8px;}
+.expense-item{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:14px 18px;display:flex;align-items:center;gap:14px;
+  transition:all 0.15s;cursor:default;
+}
+.expense-item:hover{border-color:var(--border2);box-shadow:var(--shadow);}
+.exp-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.exp-icon.food{background:#fff0e8;}
+.exp-icon.travel{background:#e8f4ff;}
+.exp-icon.shopping{background:#f0e8ff;}
+.exp-icon.health{background:#e8fff2;}
+.exp-icon.default{background:var(--bg);}
+.exp-name{font-weight:700;font-size:14px;}
+.exp-date{font-size:11px;color:var(--muted);}
+.exp-amt{font-family:'Fraunces',serif;font-weight:700;font-size:18px;color:var(--text);margin-left:auto;}
+.exp-source{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;padding:2px 7px;border-radius:4px;margin-left:8px;}
+.src-ai{background:rgba(232,88,12,0.1);color:var(--acc);}
+.src-you{background:rgba(26,71,42,0.1);color:var(--acc2);}
+
+/* BADGE */
+.cat-badge{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 8px;border-radius:4px;letter-spacing:0.3px;}
+.cb-food{background:#fff0e8;color:#e8580c;}
+.cb-travel{background:#e8f4ff;color:#1a6699;}
+.cb-shopping{background:#f0e8ff;color:#7c3db8;}
+.cb-health{background:#e8fff2;color:#1a7a3c;}
+.cb-default{background:var(--bg2);color:var(--muted);}
+
+/* PAGINATION */
+.pager{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:20px;}
+.pager-btn{padding:8px 18px;border-radius:8px;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--muted);transition:all 0.15s;}
+.pager-btn:hover{border-color:var(--acc);color:var(--acc);}
+.pager-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.pager-info{font-size:13px;color:var(--muted);font-weight:600;}
+
+/* ADD EXPENSE */
+.add-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;box-shadow:var(--shadow);}
+.add-card-title{font-family:'Fraunces',serif;font-weight:700;font-size:22px;margin-bottom:4px;}
+.add-card-sub{font-size:13px;color:var(--muted);margin-bottom:24px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-group{margin-bottom:0;}
+.form-select{
+  width:100%;padding:12px 16px;
+  border:1.5px solid var(--border);border-radius:10px;
+  background:var(--bg);font-family:'Nunito',sans-serif;font-size:14px;
+  color:var(--text);outline:none;cursor:pointer;transition:all 0.2s;
+  -webkit-appearance:none;appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23a89e88' stroke-width='2' fill='none'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;
+}
+.form-select:focus{border-color:var(--acc);background-color:var(--surface);box-shadow:0 0 0 3px rgba(232,88,12,0.1);}
+
+/* AI SECTION */
+.ai-card{
+  background:linear-gradient(135deg,#fff8f4,#fff0e0);
+  border:1.5px solid rgba(232,88,12,0.2);
+  border-radius:16px;padding:24px;margin-bottom:20px;
+  position:relative;overflow:hidden;
+}
+.ai-card::before{content:'✦';position:absolute;right:20px;top:16px;font-size:28px;opacity:0.1;color:var(--acc);}
+.ai-title{font-family:'Fraunces',serif;font-weight:700;font-size:18px;color:var(--acc);margin-bottom:4px;}
+.ai-sub{font-size:13px;color:var(--muted);margin-bottom:16px;}
+.ai-row{display:flex;gap:10px;}
+.ai-input{flex:1;padding:12px 16px;border:1.5px solid rgba(232,88,12,0.25);border-radius:10px;background:rgba(255,255,255,0.8);font-family:'Nunito',sans-serif;font-size:14px;color:var(--text);outline:none;transition:all 0.2s;}
+.ai-input:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(232,88,12,0.1);}
+.ai-input::placeholder{color:var(--muted2);}
+.ai-result{
+  margin-top:14px;background:rgba(255,255,255,0.9);
+  border:1px solid rgba(232,88,12,0.2);border-radius:10px;padding:14px;
+  display:none;font-size:13px;
+}
+.ai-result.show{display:block;}
+.ai-parsed-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;}
+
+/* LOADING */
+.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(232,88,12,0.2);border-top-color:var(--acc);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+#toast{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
+.toast-item{padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:var(--shadow-lg);animation:toastIn 0.3s ease;}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.toast-ok{background:#e8fff2;border:1px solid #a8e8c0;color:var(--success);}
+.toast-fail{background:#fff0ee;border:1px solid #f5c4bb;color:var(--danger);}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:50px 20px;}
+.empty-icon{font-size:50px;margin-bottom:12px;opacity:0.4;}
+.empty-text{font-size:15px;color:var(--muted);font-weight:500;}
+
+/* LOADING STATE */
+.loading-state{text-align:center;padding:50px;color:var(--muted);font-size:14px;}
+
+@media(max-width:768px){
+  .auth-left{max-width:100%;}
+  .auth-right{display:none;}
+  .form-row{grid-template-columns:1fr;}
+  .stats-row{grid-template-columns:1fr;}
+  .app-nav{padding:0 16px;}
+  .app-content{padding:16px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ── -->
+<div class="screen active" id="screen-login">
+  <div class="auth-wrap">
+    <div class="auth-left">
+      <div class="brand">
+        <div class="brand-name">kharcha</div>
+        <div class="brand-tag">Track every rupee, effortlessly.</div>
+      </div>
+      <div class="auth-title">Welcome back</div>
+      <div class="auth-sub">Sign in to your account</div>
+      <div class="err-msg" id="login-err"></div>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-input" id="login-user" placeholder="your_username" autocomplete="username"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password"/>
+      </div>
+      <div style="margin-top:8px">
+        <button class="btn btn-primary" id="loginBtn" onclick="doLogin()">Sign In</button>
+      </div>
+      <div class="auth-switch">Don't have an account? <a onclick="showScreen('signup')">Sign up free</a></div>
+    </div>
+    <div class="auth-right">
+      <div class="hero-number">₹</div>
+      <div class="hero-cards">
+        <div class="hero-card">
+          <div class="hero-icon" style="background:#fff0e8">🛵</div>
+          <div><div class="hero-amt">₹450</div><div class="hero-lbl">Swiggy · Just now · AI</div></div>
+        </div>
+        <div class="hero-card">
+          <div class="hero-icon" style="background:#e8f4ff">✈️</div>
+          <div><div class="hero-amt">₹3,200</div><div class="hero-lbl">IndiGo · Yesterday</div></div>
+        </div>
+        <div class="hero-card">
+          <div class="hero-icon" style="background:#e8fff2">💊</div>
+          <div><div class="hero-amt">₹180</div><div class="hero-lbl">Apollo Pharmacy · Today</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SIGNUP SCREEN ── -->
+<div class="screen" id="screen-signup">
+  <div class="auth-wrap">
+    <div class="auth-left">
+      <div class="brand">
+        <div class="brand-name">kharcha</div>
+        <div class="brand-tag">Track every rupee, effortlessly.</div>
+      </div>
+      <div class="auth-title">Create account</div>
+      <div class="auth-sub">Start tracking your expenses today</div>
+      <div class="err-msg" id="signup-err"></div>
+      <div class="form-row" style="margin-bottom:18px">
+        <div><label class="form-label">Full Name</label><input class="form-input" id="su-name" placeholder="Ravi Kumar"/></div>
+        <div><label class="form-label">Username</label><input class="form-input" id="su-user" placeholder="ravi_k"/></div>
+      </div>
+      <div class="form-group" style="margin-bottom:18px">
+        <label class="form-label">Email</label>
+        <input class="form-input" id="su-email" type="email" placeholder="ravi@email.com"/>
+      </div>
+      <div class="form-group" style="margin-bottom:24px">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="su-pass" type="password" placeholder="Min 6 characters"/>
+      </div>
+      <button class="btn btn-primary" id="signupBtn" onclick="doSignup()">Create Account</button>
+      <div class="auth-switch">Already have an account? <a onclick="showScreen('login')">Sign in</a></div>
+    </div>
+    <div class="auth-right">
+      <div class="hero-number">₹</div>
+      <div class="hero-cards">
+        <div class="hero-card"><div class="hero-icon" style="background:#f0e8ff">🤖</div><div><div class="hero-amt">AI Parsing</div><div class="hero-lbl">Send an SMS, we extract the expense</div></div></div>
+        <div class="hero-card"><div class="hero-icon" style="background:#fff0e8">📊</div><div><div class="hero-amt">Smart Insights</div><div class="hero-lbl">Category-wise spending breakdown</div></div></div>
+        <div class="hero-card"><div class="hero-icon" style="background:#e8fff2">🔒</div><div><div class="hero-amt">Secure</div><div class="hero-lbl">JWT-protected, your data is yours</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── APP SCREEN ── -->
+<div class="screen" id="screen-app">
+  <nav class="app-nav">
+    <div class="nav-brand">₹</div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchAppTab('overview')">Overview</button>
+      <button class="nav-tab" onclick="switchAppTab('expenses')">My Expenses</button>
+      <button class="nav-tab" onclick="switchAppTab('add')">+ Add Expense</button>
+    </div>
+    <div class="nav-right">
+      <div class="user-pill">
+        <div class="user-avatar" id="userInitial">U</div>
+        <span id="userNameDisplay">User</span>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Logout</button>
+    </div>
+  </nav>
+
+  <div class="app-content">
+
+    <!-- OVERVIEW TAB -->
+    <div class="app-page active" id="apppage-overview">
+      <div class="stats-row" id="overviewStats">
+        <div class="stat-tile orange">
+          <div class="tile-val orange" id="ov-total">—</div>
+          <div class="tile-lbl">Total Expenses</div>
+          <div class="tile-sub" id="ov-total-sub">this period</div>
+        </div>
+        <div class="stat-tile green">
+          <div class="tile-val green" id="ov-amount">—</div>
+          <div class="tile-lbl">Total Spent</div>
+          <div class="tile-sub">across all entries</div>
+        </div>
+        <div class="stat-tile yellow">
+          <div class="tile-val yellow" id="ov-ai">—</div>
+          <div class="tile-lbl">AI Detected</div>
+          <div class="tile-sub" id="ov-manual">— manual entries</div>
+        </div>
+      </div>
+
+      <div class="section-title">
+        Recent Transactions
+        <button class="btn btn-outline btn-sm" onclick="switchAppTab('expenses')">See All</button>
+      </div>
+      <div id="overview-recent"></div>
+    </div>
+
+    <!-- EXPENSES TAB -->
+    <div class="app-page" id="apppage-expenses">
+      <div class="section-title">
+        All Expenses
+        <div style="display:flex;gap:8px">
+          <select class="form-select" style="width:100px;padding:7px 12px;font-size:12px" id="expSortSelect" onchange="expPageNum=0;loadMyExpenses()">
+            <option value="desc">Newest</option>
+            <option value="asc">Oldest</option>
+          </select>
+          <button class="btn btn-primary btn-sm" onclick="expPageNum=0;loadMyExpenses()">↻ Refresh</button>
+        </div>
+      </div>
+      <div id="expenses-list"><div class="loading-state"><div class="spin"></div> Loading expenses...</div></div>
+      <div class="pager" id="expenses-pager" style="display:none">
+        <button class="pager-btn" id="prevBtn" onclick="prevPage()">← Previous</button>
+        <span class="pager-info" id="pagerInfo">Page 1</span>
+        <button class="pager-btn" id="nextBtn" onclick="nextPage()">Next →</button>
+      </div>
+    </div>
+
+    <!-- ADD EXPENSE TAB -->
+    <div class="app-page" id="apppage-add">
+
+      <!-- AI SECTION -->
+      <div class="ai-card">
+        <div class="ai-title">✦ AI Expense Parser</div>
+        <div class="ai-sub">Paste an SMS or describe a transaction — AI will extract the details automatically.</div>
+        <div class="ai-row">
+          <input class="ai-input" id="sms-input" placeholder="e.g. Your HDFC Bank A/c XX1234 debited Rs.450 at Swiggy on 15-01-24"/>
+          <button class="btn btn-primary btn-sm" style="white-space:nowrap" onclick="parseAI()">Parse with AI</button>
+        </div>
+        <div class="ai-result" id="ai-result">
+          <strong style="font-size:12px;color:var(--acc);text-transform:uppercase;letter-spacing:0.5px">AI Parsed:</strong>
+          <div class="ai-parsed-row" id="ai-parsed-row"></div>
+          <button class="btn btn-green btn-sm" style="margin-top:12px;width:auto" onclick="saveAIExpense()">✓ Save This Expense</button>
+        </div>
+      </div>
+
+      <!-- MANUAL FORM -->
+      <div class="add-card">
+        <div class="add-card-title">Add Manually</div>
+        <div class="add-card-sub">Fill in the details of your expense</div>
+        <div class="err-msg" id="add-err"></div>
+
+        <div class="form-row" style="margin-bottom:18px">
+          <div><label class="form-label">Amount (₹)</label><input class="form-input" id="exp-amount" type="number" placeholder="450.00" min="0" step="0.01"/></div>
+          <div><label class="form-label">Merchant</label><input class="form-input" id="exp-merchant" placeholder="Swiggy, Amazon..."/></div>
+        </div>
+        <div class="form-row" style="margin-bottom:18px">
+          <div>
+            <label class="form-label">Currency</label>
+            <select class="form-select" id="exp-currency">
+              <option value="INR">INR — Indian Rupee</option>
+              <option value="USD">USD — US Dollar</option>
+              <option value="EUR">EUR — Euro</option>
+              <option value="GBP">GBP — British Pound</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">Category</label>
+            <select class="form-select" id="exp-category">
+              <option value="">Select category</option>
+              <option value="FOOD">🍕 Food</option>
+              <option value="TRAVEL">✈️ Travel</option>
+              <option value="SHOPPING">🛍️ Shopping</option>
+              <option value="ENTERTAINMENT">🎬 Entertainment</option>
+              <option value="HEALTH">💊 Health</option>
+              <option value="UTILITIES">💡 Utilities</option>
+              <option value="EDUCATION">📚 Education</option>
+              <option value="OTHER">📦 Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row" style="margin-bottom:18px">
+          <div><label class="form-label">Date & Time</label><input class="form-input" id="exp-date" type="datetime-local"/></div>
+          <div><label class="form-label">Description (optional)</label><input class="form-input" id="exp-desc" placeholder="Lunch with team..."/></div>
+        </div>
+        <button class="btn btn-primary" id="addBtn" onclick="addExpense()" style="max-width:240px">Save Expense</button>
+      </div>
+    </div>
+
+  </div><!-- /app-content -->
+</div><!-- /screen-app -->
+
+<div id="toast"></div>
+
+<script>
+// ── CONFIG ──
+const URLS = {
+  auth: 'http://localhost:8080',
+  expense: 'http://localhost:8083',
+  user: 'http://localhost:8081',
+  ai: 'http://localhost:8000',
+};
+
+// ── STATE ──
+let token = localStorage.getItem('kharcha_token') || '';
+let userId = localStorage.getItem('kharcha_uid') || '';
+let userName = localStorage.getItem('kharcha_user') || '';
+let refreshToken = localStorage.getItem('kharcha_refresh') || '';
+let expPageNum = 0;
+let expTotalPages = 0;
+let lastAIEvent = null;
+
+// ── SCREEN NAV ──
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+}
+
+function switchAppTab(name) {
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.app-page').forEach(p=>p.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById('apppage-'+name).classList.add('active');
+  if(name==='overview') loadOverview();
+  if(name==='expenses') { expPageNum=0; loadMyExpenses(); }
+}
+
+// ── UTILS ──
+function hdrs() {
+  return {
+    'Content-Type':'application/json',
+    'Authorization':'Bearer '+token,
+    'user-id': userId,
+  };
+}
+function toast(msg, type='ok') {
+  const c = document.getElementById('toast');
+  const d = document.createElement('div');
+  d.className = `toast-item toast-${type}`;
+  d.textContent = (type==='ok'?'✓ ':'✗ ') + msg;
+  c.appendChild(d);
+  setTimeout(()=>d.remove(), 3500);
+}
+function setLoading(btnId, loading, text) {
+  const b = document.getElementById(btnId);
+  if(!b) return;
+  b.disabled = loading;
+  b.innerHTML = loading ? `<span class="spin"></span>${text||'Loading...'}` : (text||b.dataset.orig||b.textContent);
+}
+function showErr(id, msg) {
+  const el=document.getElementById(id);
+  el.textContent=msg; el.classList.add('show');
+}
+function hideErr(id) { document.getElementById(id).classList.remove('show'); }
+
+function catBadge(v) {
+  if(!v) return '';
+  const map={FOOD:'cb-food',TRAVEL:'cb-travel',SHOPPING:'cb-shopping',HEALTH:'cb-health'};
+  const icons={FOOD:'🍕',TRAVEL:'✈️',SHOPPING:'🛍️',HEALTH:'💊',ENTERTAINMENT:'🎬',UTILITIES:'💡',EDUCATION:'📚',OTHER:'📦'};
+  return `<span class="cat-badge ${map[v]||'cb-default'}">${icons[v]||'📦'} ${v}</span>`;
+}
+function catIcon(v) {
+  const cls={FOOD:'food',TRAVEL:'travel',SHOPPING:'shopping',HEALTH:'health'};
+  const icons={FOOD:'🍕',TRAVEL:'✈️',SHOPPING:'🛍️',HEALTH:'💊',ENTERTAINMENT:'🎬',UTILITIES:'💡',EDUCATION:'📚'};
+  return `<div class="exp-icon ${cls[v]||'default'}">${icons[v]||'💳'}</div>`;
+}
+
+// ── AUTO LOGIN CHECK ──
+window.onload = () => {
+  if (token && userId) {
+    showScreen('app');
+    loadOverview();
+    document.getElementById('userNameDisplay').textContent = userName || 'User';
+    document.getElementById('userInitial').textContent = (userName||'U')[0].toUpperCase();
+  }
+  // Set default date
+  const now = new Date();
+  now.setMinutes(now.getMinutes()-now.getTimezoneOffset());
+  document.getElementById('exp-date').value = now.toISOString().slice(0,16);
+};
+
+// ── LOGIN ──
+async function doLogin() {
+  hideErr('login-err');
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value.trim();
+  if(!username||!password) { showErr('login-err','Please enter username and password.'); return; }
+  setLoading('loginBtn', true, 'Signing in...');
+  try {
+    const res = await fetch(`${URLS.auth}/auth/login`, {
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({username,password})
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.message||'Login failed');
+    token = data.data.accessToken;
+    refreshToken = data.data.refreshToken;
+    localStorage.setItem('kharcha_token', token);
+    localStorage.setItem('kharcha_refresh', refreshToken);
+    // Get userId
+    const pingRes = await fetch(`${URLS.auth}/ping`,{headers:{'Authorization':'Bearer '+token}});
+    if(pingRes.ok) {
+      const uid = await pingRes.json();
+      userId = String(uid);
+      localStorage.setItem('kharcha_uid', userId);
+    }
+    localStorage.setItem('kharcha_user', username);
+    userName = username;
+    document.getElementById('userNameDisplay').textContent = username;
+    document.getElementById('userInitial').textContent = username[0].toUpperCase();
+    showScreen('app');
+    loadOverview();
+    toast('Welcome back, '+username+'!');
+  } catch(e) {
+    showErr('login-err', e.message||'Login failed. Check credentials.');
+  } finally { setLoading('loginBtn', false, 'Sign In'); }
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  document.getElementById('login-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+  document.getElementById('login-user').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+});
+
+// ── SIGNUP ──
+async function doSignup() {
+  hideErr('signup-err');
+  const name=document.getElementById('su-name').value.trim();
+  const userName=document.getElementById('su-user').value.trim();
+  const email=document.getElementById('su-email').value.trim();
+  const password=document.getElementById('su-pass').value.trim();
+  if(!name||!userName||!email||!password){showErr('signup-err','All fields are required.');return;}
+  if(password.length<6){showErr('signup-err','Password must be at least 6 characters.');return;}
+  setLoading('signupBtn',true,'Creating account...');
+  try {
+    const res = await fetch(`${URLS.auth}/auth/signup`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name,userName,email,password})
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.message||'Signup failed');
+    toast('Account created! Please sign in.','ok');
+    document.getElementById('login-user').value=userName;
+    showScreen('login');
+  } catch(e) {
+    showErr('signup-err', e.message||'Signup failed.');
+  } finally { setLoading('signupBtn',false,'Create Account'); }
+}
+
+// ── LOGOUT ──
+function doLogout() {
+  token='';userId='';userName='';refreshToken='';
+  localStorage.clear();
+  showScreen('login');
+  toast('Logged out','ok');
+}
+
+// ── LOAD OVERVIEW ──
+async function loadOverview() {
+  try {
+    const res = await fetch(`${URLS.expense}/saveExpense?page=0&size=50&sortDir=desc`,{headers:hdrs()});
+    if(!res.ok) return;
+    const data = await res.json();
+    const items = data.content||[];
+    document.getElementById('ov-total').textContent = data.totalElements||items.length;
+    const sum = items.reduce((s,e)=>s+Number(e.amount||0),0);
+    document.getElementById('ov-amount').textContent = '₹'+sum.toLocaleString('en-IN',{maximumFractionDigits:0});
+    const aiCnt = items.filter(e=>e.source==='AI').length;
+    const manCnt = items.filter(e=>e.source==='YOU').length;
+    document.getElementById('ov-ai').textContent = aiCnt;
+    document.getElementById('ov-manual').textContent = manCnt + ' manual entries';
+    // Recent 5
+    renderExpenseList(items.slice(0,5), 'overview-recent', false);
+  } catch(e) { console.error(e); }
+}
+
+// ── LOAD EXPENSES ──
+async function loadMyExpenses() {
+  const container = document.getElementById('expenses-list');
+  const pager = document.getElementById('expenses-pager');
+  container.innerHTML = '<div class="loading-state"><div class="spin"></div> Loading...</div>';
+  pager.style.display='none';
+  try {
+    const sort = document.getElementById('expSortSelect').value;
+    const res = await fetch(`${URLS.expense}/saveExpense?page=${expPageNum}&size=10&sortDir=${sort}`,{headers:hdrs()});
+    if(!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    const data = await res.json();
+    expTotalPages = data.totalPages||0;
+    const items = data.content||[];
+    if(!items.length) {
+      container.innerHTML='<div class="empty-state"><div class="empty-icon">💳</div><div class="empty-text">No expenses yet. Add your first one!</div></div>';
+      return;
+    }
+    renderExpenseList(items, 'expenses-list', true);
+    if(expTotalPages>1) {
+      pager.style.display='flex';
+      document.getElementById('pagerInfo').textContent = `Page ${expPageNum+1} of ${expTotalPages}`;
+      document.getElementById('prevBtn').disabled = expPageNum===0;
+      document.getElementById('nextBtn').disabled = expPageNum>=expTotalPages-1;
+    }
+  } catch(e) {
+    container.innerHTML=`<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-text">Could not load expenses.<br><small>${e.message}</small></div></div>`;
+  }
+}
+function prevPage(){if(expPageNum>0){expPageNum--;loadMyExpenses();}}
+function nextPage(){if(expPageNum<expTotalPages-1){expPageNum++;loadMyExpenses();}}
+
+function renderExpenseList(items, containerId, full) {
+  const c = document.getElementById(containerId);
+  if(!items.length){c.innerHTML='<div class="empty-state"><div class="empty-icon">💳</div><div class="empty-text">No transactions here yet.</div></div>';return;}
+  c.innerHTML=`<div class="expense-list">${items.map(e=>`
+    <div class="expense-item">
+      ${catIcon(e.category)}
+      <div style="flex:1;min-width:0">
+        <div class="exp-name">${e.merchant||'Unknown'}</div>
+        <div class="exp-date" style="display:flex;gap:6px;align-items:center;margin-top:3px">
+          ${catBadge(e.category)}
+          <span>${e.expenseDate?e.expenseDate.replace('T',' ').slice(0,10):'—'}</span>
+          ${e.description?`<span>· ${e.description}</span>`:''}
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div class="exp-amt">₹${Number(e.amount).toLocaleString('en-IN',{minimumFractionDigits:2})}</div>
+        <span class="exp-source ${e.source==='AI'?'src-ai':'src-you'}">${e.source||'YOU'}</span>
+      </div>
+    </div>`).join('')}</div>`;
+}
+
+// ── ADD EXPENSE ──
+async function addExpense() {
+  hideErr('add-err');
+  const amount = document.getElementById('exp-amount').value;
+  const merchant = document.getElementById('exp-merchant').value.trim();
+  const currency = document.getElementById('exp-currency').value;
+  const category = document.getElementById('exp-category').value;
+  const expDate = document.getElementById('exp-date').value;
+  const description = document.getElementById('exp-desc').value.trim();
+  if(!amount||!merchant||!expDate){showErr('add-err','Amount, merchant and date are required.');return;}
+  setLoading('addBtn',true,'Saving...');
+  try {
+    const body = {amount:parseFloat(amount),merchant,currency,expenseDate:expDate+':00',description:description||null};
+    if(category) body.category=category;
+    const res = await fetch(`${URLS.expense}/saveExpense`,{
+      method:'POST',headers:hdrs(),body:JSON.stringify(body)
+    });
+    if(!res.ok) {
+      const err = await res.json().catch(()=>({}));
+      throw new Error(err.message||`Error ${res.status}`);
+    }
+    toast('Expense saved!','ok');
+    document.getElementById('exp-amount').value='';
+    document.getElementById('exp-merchant').value='';
+    document.getElementById('exp-desc').value='';
+    loadOverview();
+  } catch(e) {
+    showErr('add-err', e.message||'Failed to save expense.');
+  } finally { setLoading('addBtn',false,'Save Expense'); }
+}
+
+// ── AI PARSE ──
+async function parseAI() {
+  const msg = document.getElementById('sms-input').value.trim();
+  if(!msg){toast('Enter a message first','fail');return;}
+  const btn = document.querySelector('[onclick="parseAI()"]');
+  const orig = btn.textContent;
+  btn.disabled=true; btn.innerHTML='<span class="spin"></span> Parsing...';
+  document.getElementById('ai-result').classList.remove('show');
+  try {
+    const res = await fetch(`${URLS.ai}/api/v1/analyze`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','user-id':userId},
+      body:JSON.stringify({message:msg})
+    });
+    if(!res.ok) throw new Error(`AI service error: ${res.status}`);
+    const data = await res.json();
+    const exp = data.data;
+    lastAIEvent = exp;
+    document.getElementById('ai-parsed-row').innerHTML = `
+      <span style="background:var(--bg2);padding:5px 10px;border-radius:6px;font-size:12px;font-weight:700">₹${Number(exp.amount).toLocaleString('en-IN',{minimumFractionDigits:2})}</span>
+      <span style="background:var(--bg2);padding:5px 10px;border-radius:6px;font-size:12px">${exp.merchant||'—'}</span>
+      <span style="background:var(--bg2);padding:5px 10px;border-radius:6px;font-size:12px">${exp.currency||'INR'}</span>
+      <span style="background:var(--bg2);padding:5px 10px;border-radius:6px;font-size:12px">${exp.created_at?String(exp.created_at).slice(0,16).replace('T',' '):'—'}</span>
+    `;
+    document.getElementById('ai-result').classList.add('show');
+    toast('AI parsed the expense!');
+  } catch(e) {
+    toast('AI parsing failed: '+e.message,'fail');
+  } finally { btn.disabled=false; btn.textContent=orig; }
+}
+
+async function saveAIExpense() {
+  if(!lastAIEvent){toast('Nothing to save','fail');return;}
+  const btn = document.querySelector('[onclick="saveAIExpense()"]');
+  const orig = btn.textContent;
+  btn.disabled=true; btn.textContent='Saving...';
+  try {
+    // AI service already saved it via Kafka — just confirm to user
+    toast('Expense already saved via AI pipeline! ✦');
+    document.getElementById('ai-result').classList.remove('show');
+    document.getElementById('sms-input').value='';
+    lastAIEvent=null;
+    loadOverview();
+  } catch(e) {
+    toast('Error: '+e.message,'fail');
+  } finally { btn.disabled=false; btn.textContent=orig; }
+}
+</script>
+</body>
+</html>
