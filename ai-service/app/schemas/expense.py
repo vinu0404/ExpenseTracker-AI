@@ -5,6 +5,7 @@ class ExpenseEvent(BaseModel):
     amount: float = Field(..., description="Transaction amount")
     merchant: str = Field(..., description="Merchant name")
     currency: str = Field(..., description="Currency code like INR")
+    description: str = Field(..., description="Short one-line description of the expense")
     created_at: datetime | None = Field(None, description="Transaction timestamp, null if not mentioned")
     user_id: int | None = Field(None, description="User ID")
 

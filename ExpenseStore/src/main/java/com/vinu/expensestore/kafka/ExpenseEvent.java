@@ -17,6 +17,9 @@ public class ExpenseEvent {
     @JsonProperty("currency")
     private String currency;
 
+    @JsonProperty("description")
+    private String description;
+
     @JsonProperty("created_at")
     private LocalDateTime createdAt;
 

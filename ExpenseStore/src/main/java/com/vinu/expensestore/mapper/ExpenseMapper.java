@@ -31,6 +31,7 @@ public class ExpenseMapper {
                 .amount(BigDecimal.valueOf(event.getAmount()))
                 .merchant(event.getMerchant())
                 .currency(event.getCurrency())
+                .description(event.getDescription())
                 .expenseDate(event.getCreatedAt() != null ? event.getCreatedAt() : LocalDateTime.now())
                 .source(ExpenseSource.AI)
                 .build();

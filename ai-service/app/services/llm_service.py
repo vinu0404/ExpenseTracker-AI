@@ -12,7 +12,8 @@ def generate_expense_summary(message: str, user_id: int) -> ExpenseEvent | None:
         logger.info("Calling LLM for userId=%s, model=%s", user_id, settings.MODEL_NAME)
         prompt = (
         f"Extract the expense details from the following message and return it in JSON format "
-        f"with keys: amount, merchant, currency, created_at. "
+        f"with keys: amount, merchant, currency, description, created_at. "
+        f"For description, write a short one-line summary of what the expense was for. "
         f"If the date or time is not mentioned in the message, set created_at to null. "
         f"Message: {message}"
         )
