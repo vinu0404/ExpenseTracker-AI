@@ -1,0 +1,55 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+  log_level: warn
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    tenant_id: kharcha
+    batchwait: 1s
+    batchsize: 1048576          # 1 MB
+
+scrape_configs:
+
+  # ── Scrape all Docker container logs ──
+  - job_name: docker
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      # Use container name as label
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+      # Use compose service name
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        target_label: 'service'
+      # Use compose project
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_project']
+        target_label: 'project'
+      # Drop monitoring containers' own logs (avoid recursion)
+      - source_labels: ['__meta_docker_container_label_com_docker_compose_service']
+        regex: '(loki|promtail|grafana)'
+        action: drop
+    pipeline_stages:
+      # Extract log level from Java (Spring Boot) logs
+      - regex:
+          expression: '.*\s+(?P<level>INFO|WARN|ERROR|DEBUG|TRACE)\s+.*'
+      - labels:
+          level:
+      # Extract log level from Python logs
+      - regex:
+          expression: '.*\s+(?P<level>INFO|WARNING|ERROR|DEBUG)\s+-\s+.*'
+      - labels:
+          level:
+      # Timestamp extraction for Spring Boot
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d+Z?)'
+      - timestamp:
+          source: timestamp
+          format: '2006-01-02T15:04:05.000Z'
+          fallback_formats:
+            - '2006-01-02T15:04:05.000000Z'
