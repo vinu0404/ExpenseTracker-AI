@@ -47,6 +47,15 @@ services:
           - /saveExpense
         strip_path: false
 
+  # Expense Store — admin endpoint (protected + admin role check)
+  - name: expense-admin-service
+    url: http://expense-store:8083
+    routes:
+      - name: expense-admin-routes
+        paths:
+          - /expenses/admin
+        strip_path: false
+
   # AI Service (protected)
   - name: ai-service
     url: http://ai-service:8000
@@ -78,6 +87,7 @@ plugins:
       exposed_headers:
         - X-User-Id
         - X-User-Name
+        - X-User-Roles
       credentials: true
       max_age: 3600
 
@@ -106,10 +116,15 @@ plugins:
           if not res or res.status ~= 200 then
             return kong.response.exit(401, '{"message":"Unauthorized"}', {["Content-Type"]="application/json"})
           end
+          local roles = res.headers["X-User-Roles"] or ""
+          if not string.find(roles, "ROLE_ADMIN") then
+            return kong.response.exit(403, '{"message":"Forbidden: Admin role required"}', {["Content-Type"]="application/json"})
+          end
           local uid = res.headers["X-User-Id"]
           if uid then
             kong.service.request.set_header("user-id", uid)
           end
+          kong.service.request.set_header("user-roles", roles)
 
   - name: pre-function
     service: expense-service
@@ -134,6 +149,39 @@ plugins:
           if uid then
             kong.service.request.set_header("user-id", uid)
           end
+          local roles = res.headers["X-User-Roles"]
+          if roles then
+            kong.service.request.set_header("user-roles", roles)
+          end
+
+  - name: pre-function
+    service: expense-admin-service
+    config:
+      access:
+        - |
+          if kong.request.get_method() == "OPTIONS" then return end
+          local http = require("resty.http")
+          local httpc = http.new()
+          local auth = kong.request.get_header("Authorization")
+          if not auth then
+            return kong.response.exit(401, '{"message":"Missing Authorization header"}', {["Content-Type"]="application/json"})
+          end
+          local res, err = httpc:request_uri("http://auth-service:8080/ping", {
+            method = "GET",
+            headers = { ["Authorization"] = auth },
+          })
+          if not res or res.status ~= 200 then
+            return kong.response.exit(401, '{"message":"Unauthorized"}', {["Content-Type"]="application/json"})
+          end
+          local roles = res.headers["X-User-Roles"] or ""
+          if not string.find(roles, "ROLE_ADMIN") then
+            return kong.response.exit(403, '{"message":"Forbidden: Admin role required"}', {["Content-Type"]="application/json"})
+          end
+          local uid = res.headers["X-User-Id"]
+          if uid then
+            kong.service.request.set_header("user-id", uid)
+          end
+          kong.service.request.set_header("user-roles", roles)
 
   - name: pre-function
     service: ai-service
@@ -157,4 +205,8 @@ plugins:
           local uid = res.headers["X-User-Id"]
           if uid then
             kong.service.request.set_header("user-id", uid)
+          end
+          local roles = res.headers["X-User-Roles"]
+          if roles then
+            kong.service.request.set_header("user-roles", roles)
           end

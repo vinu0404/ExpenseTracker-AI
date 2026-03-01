@@ -39,13 +39,13 @@ public class AdminController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/admin/users")
+    @GetMapping("/users")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<UserInfo>> getAllUsers() {
         return ResponseEntity.ok(userRepository.findAll());
     }
 
-    @GetMapping("/admin/tokens")
+    @GetMapping("/tokens")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<RefreshToken>> getAllTokens() {
         return ResponseEntity.ok(refreshTokenRepository.findAll());

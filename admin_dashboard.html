@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Kharcha — Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@300;400;600;700;900&family=Nunito:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #faf8f4; --bg2: #f4f0e8; --surface: #ffffff;
+  --border: #e8e0d0; --border2: #d4c9b0;
+  --acc: #e8580c; --acc2: #1a472a; --acc3: #f5c842; --acc-light: #fff0e8;
+  --text: #1c1a17; --muted: #7a7060; --muted2: #a89e88;
+  --success: #1a7a3c; --danger: #c0392b;
+  --shadow: 0 2px 20px rgba(28,26,23,0.08);
+  --shadow-lg: 0 8px 40px rgba(28,26,23,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-height:100vh;}
+
+/* ── LAYOUT ── */
+.topbar{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:16px 32px;display:flex;justify-content:space-between;align-items:center;
+  position:sticky;top:0;z-index:100;
+}
+.brand{font-family:'Fraunces',serif;font-weight:900;font-size:26px;color:var(--acc);letter-spacing:-1px;}
+.brand small{font-family:'Nunito',sans-serif;font-weight:600;font-size:12px;color:var(--muted);margin-left:8px;letter-spacing:1px;text-transform:uppercase;}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.topbar-user{font-size:13px;color:var(--muted);font-weight:600;}
+.btn{padding:8px 18px;border-radius:8px;font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;cursor:pointer;border:none;transition:all 0.2s;}
+.btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border);}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text);}
+.btn-primary{background:var(--acc);color:#fff;}
+.btn-primary:hover{background:#cc4c09;transform:translateY(-1px);}
+.btn-sm{padding:6px 14px;font-size:12px;}
+
+.container{max-width:1100px;margin:0 auto;padding:32px 24px;}
+
+/* ── LOGIN ── */
+.login-card{
+  max-width:380px;margin:80px auto;background:var(--surface);
+  padding:40px;border-radius:16px;box-shadow:var(--shadow);
+}
+.login-card h2{font-family:'Fraunces',serif;font-weight:700;font-size:24px;margin-bottom:6px;}
+.login-card p{font-size:13px;color:var(--muted);margin-bottom:24px;}
+.form-group{margin-bottom:16px;}
+.form-label{display:block;font-size:11px;font-weight:700;letter-spacing:0.5px;margin-bottom:5px;text-transform:uppercase;color:var(--text);}
+.form-input{
+  width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;
+  background:var(--bg);font-family:'Nunito',sans-serif;font-size:14px;
+  color:var(--text);outline:none;transition:all 0.2s;
+}
+.form-input:focus{border-color:var(--acc);background:var(--surface);box-shadow:0 0 0 3px rgba(232,88,12,0.1);}
+.err-msg{background:#fff0ee;border:1px solid #f5c4bb;color:var(--danger);padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:14px;display:none;}
+.err-msg.show{display:block;}
+
+/* ── DASHBOARD ── */
+.dash{display:none;}
+.dash.active{display:block;}
+
+.section-title{
+  font-family:'Fraunces',serif;font-weight:700;font-size:22px;margin-bottom:16px;
+  display:flex;align-items:center;gap:10px;
+}
+.badge{
+  display:inline-block;background:var(--acc-light);color:var(--acc);
+  font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;
+  padding:3px 10px;border-radius:20px;
+}
+
+/* ── USERS TABLE ── */
+.table-wrap{
+  background:var(--surface);border-radius:12px;box-shadow:var(--shadow);
+  overflow:hidden;margin-bottom:32px;
+}
+table{width:100%;border-collapse:collapse;}
+th{
+  background:var(--bg2);text-align:left;padding:12px 16px;
+  font-size:11px;font-weight:700;letter-spacing:0.5px;
+  text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);
+}
+td{padding:12px 16px;font-size:14px;border-bottom:1px solid var(--border);}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:var(--bg);}
+.user-row{cursor:pointer;transition:background 0.15s;}
+.user-row:hover td{background:var(--acc-light);}
+.user-row.selected td{background:#fff0e8;font-weight:600;}
+.role-tag{
+  display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;
+}
+.role-admin{background:#e8f5e9;color:#2e7d32;}
+.role-user{background:#e3f2fd;color:#1565c0;}
+
+/* ── EXPENSE PANEL ── */
+.expense-panel{
+  background:var(--surface);border-radius:12px;box-shadow:var(--shadow);
+  padding:24px;margin-bottom:32px;
+}
+.expense-panel-header{
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;
+}
+.expense-panel-title{font-family:'Fraunces',serif;font-weight:600;font-size:18px;}
+.pagination{display:flex;gap:8px;align-items:center;}
+.pagination button{
+  padding:6px 12px;border:1.5px solid var(--border);border-radius:6px;
+  background:var(--surface);font-family:'Nunito',sans-serif;font-size:12px;
+  font-weight:700;cursor:pointer;color:var(--text);transition:all 0.15s;
+}
+.pagination button:hover:not(:disabled){border-color:var(--acc);color:var(--acc);}
+.pagination button:disabled{opacity:0.4;cursor:default;}
+.pagination span{font-size:13px;color:var(--muted);font-weight:600;}
+.expense-item{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 0;border-bottom:1px solid var(--border);
+}
+.expense-item:last-child{border-bottom:none;}
+.exp-left{flex:1;}
+.exp-merchant{font-weight:700;font-size:14px;}
+.exp-desc{font-size:12px;color:var(--muted);margin-top:2px;}
+.exp-date{font-size:11px;color:var(--muted2);margin-top:2px;}
+.exp-right{text-align:right;}
+.exp-amount{font-family:'Fraunces',serif;font-weight:700;font-size:16px;color:var(--acc);}
+.exp-source{font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;margin-top:2px;}
+.exp-source.manual{color:var(--acc2);}
+.exp-source.ai{color:#7c3aed;}
+.empty-state{text-align:center;padding:40px;color:var(--muted);font-size:14px;}
+
+/* ── TOAST ── */
+#toast{position:fixed;top:20px;right:20px;z-index:9999;}
+.toast-item{padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;margin-bottom:8px;animation:slideIn 0.3s ease;}
+.toast-ok{background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;}
+.toast-fail{background:#fff0ee;color:var(--danger);border:1px solid #f5c4bb;}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--acc);border-radius:50%;animation:spin 0.6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ── -->
+<div id="login-screen">
+  <div class="login-card">
+    <h2>Admin Login</h2>
+    <p>Sign in with an admin account to manage Kharcha.</p>
+    <div id="login-err" class="err-msg"></div>
+    <div class="form-group">
+      <label class="form-label">Username</label>
+      <input class="form-input" id="login-user" placeholder="admin"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input class="form-input" id="login-pass" type="password" placeholder="••••••••"/>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:8px;" id="loginBtn" onclick="doLogin()">Sign In</button>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div id="dashboard" class="dash">
+  <div class="topbar">
+    <div><span class="brand">Kharcha</span><small>Admin</small></div>
+    <div class="topbar-right">
+      <span class="topbar-user" id="adminName"></span>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Users Table -->
+    <div class="section-title">Users <span class="badge" id="userCount">0</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>ID</th><th>Username</th><th>Name</th><th>Email</th><th>Roles</th></tr></thead>
+        <tbody id="usersBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Expense Panel (shown when a user is clicked) -->
+    <div id="expenseSection" style="display:none;">
+      <div class="expense-panel">
+        <div class="expense-panel-header">
+          <div class="expense-panel-title">Expenses for <span id="selectedUserName" style="color:var(--acc);"></span></div>
+          <div class="pagination">
+            <button id="prevBtn" onclick="changePage(-1)" disabled>&larr; Prev</button>
+            <span id="pageInfo">Page 1</span>
+            <button id="nextBtn" onclick="changePage(1)">Next &rarr;</button>
+          </div>
+        </div>
+        <div id="expenseList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const KONG = 'http://localhost:9000';
+let token = '';
+let selectedUserId = null;
+let expPage = 0;
+let expTotalPages = 0;
+
+function hdrs() {
+  return { 'Content-Type':'application/json', 'Authorization':'Bearer '+token };
+}
+
+function toast(msg, type='ok') {
+  const c = document.getElementById('toast');
+  const d = document.createElement('div');
+  d.className = `toast-item toast-${type}`;
+  d.textContent = (type==='ok'?'✓ ':'✗ ') + msg;
+  c.appendChild(d);
+  setTimeout(()=>d.remove(), 3500);
+}
+
+function showErr(id, msg) { const e=document.getElementById(id); e.textContent=msg; e.classList.add('show'); }
+function hideErr(id) { document.getElementById(id).classList.remove('show'); }
+
+// ── LOGIN ──
+async function doLogin() {
+  hideErr('login-err');
+  const username = document.getElementById('login-user').value.trim();
+  const password = document.getElementById('login-pass').value.trim();
+  if (!username || !password) { showErr('login-err','Enter username and password.'); return; }
+
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'Signing in...';
+
+  try {
+    const res = await fetch(`${KONG}/auth/login`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Login failed');
+
+    token = data.data.accessToken;
+
+    // Verify admin role via /ping
+    const pingRes = await fetch(`${KONG}/ping`, { headers:{'Authorization':'Bearer '+token} });
+    if (!pingRes.ok) throw new Error('Token validation failed');
+
+    const roles = pingRes.headers.get('X-User-Roles') || '';
+    if (!roles.includes('ROLE_ADMIN')) {
+      throw new Error('Access denied — admin role required.');
+    }
+
+    document.getElementById('adminName').textContent = username;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('dashboard').classList.add('active');
+    loadUsers();
+    toast('Welcome, ' + username);
+  } catch(e) {
+    showErr('login-err', e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
+}
+
+function doLogout() {
+  token = '';
+  document.getElementById('dashboard').classList.remove('active');
+  document.getElementById('login-screen').style.display = 'block';
+  document.getElementById('login-user').value = '';
+  document.getElementById('login-pass').value = '';
+  document.getElementById('expenseSection').style.display = 'none';
+  selectedUserId = null;
+}
+
+// ── LOAD USERS ──
+async function loadUsers() {
+  try {
+    const res = await fetch(`${KONG}/admin/users`, { headers: hdrs() });
+    if (!res.ok) throw new Error('Failed to load users');
+    const users = await res.json();
+
+    document.getElementById('userCount').textContent = users.length;
+    const tbody = document.getElementById('usersBody');
+    tbody.innerHTML = '';
+
+    users.forEach(u => {
+      const roles = (u.roles || []).map(r => {
+        const name = r.roleName || r.role_name || '';
+        const cls = name.includes('ADMIN') ? 'role-admin' : 'role-user';
+        return `<span class="role-tag ${cls}">${name.replace('ROLE_','')}</span>`;
+      }).join(' ');
+
+      const tr = document.createElement('tr');
+      tr.className = 'user-row';
+      tr.dataset.uid = u.userId || u.user_id;
+      tr.dataset.uname = u.userName || u.user_name;
+      tr.innerHTML = `
+        <td>${u.userId || u.user_id}</td>
+        <td><strong>${u.userName || u.user_name}</strong></td>
+        <td>${u.name || '-'}</td>
+        <td>${u.email || '-'}</td>
+        <td>${roles}</td>`;
+      tr.onclick = () => selectUser(tr);
+      tbody.appendChild(tr);
+    });
+  } catch(e) {
+    toast(e.message, 'fail');
+  }
+}
+
+// ── SELECT USER → LOAD EXPENSES ──
+function selectUser(row) {
+  document.querySelectorAll('.user-row').forEach(r => r.classList.remove('selected'));
+  row.classList.add('selected');
+  selectedUserId = row.dataset.uid;
+  expPage = 0;
+  document.getElementById('selectedUserName').textContent = row.dataset.uname;
+  document.getElementById('expenseSection').style.display = 'block';
+  loadExpenses();
+}
+
+async function loadExpenses() {
+  const list = document.getElementById('expenseList');
+  list.innerHTML = '<div class="empty-state"><div class="spinner"></div></div>';
+
+  try {
+    const res = await fetch(`${KONG}/expenses/admin?userId=${selectedUserId}&page=${expPage}&size=10&sortDir=desc`, {
+      headers: hdrs()
+    });
+    if (!res.ok) throw new Error('Failed to load expenses');
+    const data = await res.json();
+
+    expTotalPages = data.totalPages || 0;
+    updatePagination();
+
+    const items = data.content || [];
+    if (items.length === 0) {
+      list.innerHTML = '<div class="empty-state">No expenses found for this user.</div>';
+      return;
+    }
+
+    list.innerHTML = items.map(e => `
+      <div class="expense-item">
+        <div class="exp-left">
+          <div class="exp-merchant">${e.merchant || 'Unknown'}</div>
+          ${e.description ? `<div class="exp-desc">${e.description}</div>` : ''}
+          <div class="exp-date">${formatDate(e.expenseDate)}</div>
+        </div>
+        <div class="exp-right">
+          <div class="exp-amount">${e.currency || '₹'} ${Number(e.amount).toLocaleString('en-IN', {minimumFractionDigits:2})}</div>
+          <div class="exp-source ${(e.source||'').toLowerCase()}">${e.source || ''}</div>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    list.innerHTML = `<div class="empty-state" style="color:var(--danger);">${e.message}</div>`;
+  }
+}
+
+function updatePagination() {
+  document.getElementById('pageInfo').textContent = `Page ${expPage + 1} of ${Math.max(expTotalPages, 1)}`;
+  document.getElementById('prevBtn').disabled = expPage <= 0;
+  document.getElementById('nextBtn').disabled = expPage >= expTotalPages - 1;
+}
+
+function changePage(delta) {
+  expPage += delta;
+  loadExpenses();
+}
+
+function formatDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'})
+    + ' ' + d.toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
+}
+
+// Enter key login
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin();
+});
+</script>
+</body>
+</html>

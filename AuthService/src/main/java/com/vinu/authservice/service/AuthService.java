@@ -44,7 +44,7 @@ public class AuthService {
         log.info("Signup attempt for username: {}", signUpRequest.getUserName());
         if(userRepository.existsByUserName(signUpRequest.getUserName())){
             log.warn("Signup rejected - username already exists: {}", signUpRequest.getUserName());
-            return "UserName already exist";
+            throw new RuntimeException("Username already exists");
         }
         UserRole roleUser = roleRepository.findByRoleName("ROLE_USER").orElseThrow(
                 ()->new RuntimeException("Error from our side"));

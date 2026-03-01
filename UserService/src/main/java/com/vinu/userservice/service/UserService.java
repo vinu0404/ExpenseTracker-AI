@@ -5,9 +5,10 @@ import com.vinu.userservice.kafka.UserCreatedEvent;
 import com.vinu.userservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.annotation.EnableKafka;
+import org.springframework.http.HttpStatus;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 @Service
 @RequiredArgsConstructor
@@ -44,7 +45,7 @@ public class UserService {
         User user = userRepository.findById(userId).orElseThrow(
                 () -> {
                     log.warn("User not found for userId: {}", userId);
-                    return new RuntimeException("User Not found");
+                    return new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
                 }
         );
         return UserDto.builder()

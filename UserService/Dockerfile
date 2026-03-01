@@ -14,7 +14,7 @@ RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
 
 COPY --from=build /app/target/*.jar app.jar
-EXPOSE 8083
+EXPOSE 8081
 
 ENTRYPOINT ["java", \
   "-XX:MaxRAMPercentage=75.0", \

@@ -7,6 +7,7 @@ import com.vinu.authservice.repository.RoleRepository;
 import com.vinu.authservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 
@@ -18,6 +19,7 @@ public class AdminService {
     private final RoleRepository roleRepository;
 
 
+    @Transactional
     public String promoteToAdmin(String userName){
         UserInfo user = userRepository.findByUserName(userName) .orElseThrow(
                 () -> new RuntimeException("User not found"));

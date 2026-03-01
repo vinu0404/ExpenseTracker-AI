@@ -3,6 +3,7 @@ package com.vinu.expensestore.dto;
 import com.vinu.expensestore.Constants.ExpenseCategory;
 import lombok.Data;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -11,7 +12,7 @@ import java.time.LocalDateTime;
 public class ExpenseRequestDto {
 
 
-    @NotBlank(message = "Amount is required")
+    @NotNull(message = "Amount is required")
     @Positive(message = "Amount must be positive")
     private BigDecimal amount;
 
@@ -25,7 +26,7 @@ public class ExpenseRequestDto {
 
     private ExpenseCategory category;
 
-    @NotBlank(message = "Expense date is required")
+    @NotNull(message = "Expense date is required")
     private LocalDateTime expenseDate;
 
 

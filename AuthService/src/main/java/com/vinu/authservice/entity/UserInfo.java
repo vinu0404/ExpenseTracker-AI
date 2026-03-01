@@ -29,10 +29,10 @@ public class UserInfo {
     @Column(name = "user_name",unique = true,nullable = false)
     private String  userName;
 
+    @JsonIgnore
     @Column(nullable = false)
     private String password;
 
-    @JsonIgnore
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",

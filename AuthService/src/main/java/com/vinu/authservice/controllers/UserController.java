@@ -25,16 +25,25 @@ public class UserController {
     public ResponseEntity<ApiResponse<String>> signup(
             @RequestBody SignUpRequest request) {
 
-        String result = authService.doSignUp(request);
+        try {
+            String result = authService.doSignUp(request);
 
-        ApiResponse<String> response = ApiResponse.<String>builder()
-                .success(true)
-                .message("User registered successfully")
-                .data(result)
-                .timestamp(Instant.now())
-                .build();
+            ApiResponse<String> response = ApiResponse.<String>builder()
+                    .success(true)
+                    .message("User registered successfully")
+                    .data(result)
+                    .timestamp(Instant.now())
+                    .build();
 
-        return ResponseEntity.status(201).body(response);
+            return ResponseEntity.status(201).body(response);
+        } catch (RuntimeException e) {
+            ApiResponse<String> response = ApiResponse.<String>builder()
+                    .success(false)
+                    .message(e.getMessage())
+                    .timestamp(Instant.now())
+                    .build();
+            return ResponseEntity.status(409).body(response);
+        }
     }
 
     @PostMapping("/login")

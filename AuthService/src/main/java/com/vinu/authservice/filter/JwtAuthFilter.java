@@ -1,7 +1,6 @@
 package com.vinu.authservice.filter;
 
 import com.vinu.authservice.security.JwtService;
-import com.vinu.authservice.service.CustomUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,7 +23,6 @@ import java.util.List;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final CustomUserDetailsService userDetailsService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -38,31 +36,45 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-        String token = authHeader.substring(7);
-        String username = jwtService.extractUserName(token);
-        List<String> extractedRoles = jwtService.extractRoles(token);
+        try {
+            String token = authHeader.substring(7);
+            String username = jwtService.extractUserName(token);
+            List<String> extractedRoles = jwtService.extractRoles(token);
 
-        List<SimpleGrantedAuthority> authorities =
-                extractedRoles.stream()
-                        .map(role -> new SimpleGrantedAuthority(role))
-                        .toList();
+            List<SimpleGrantedAuthority> authorities =
+                    extractedRoles.stream()
+                            .map(role -> new SimpleGrantedAuthority(role))
+                            .toList();
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            if (jwtService.validateToken(token)) {
-                UsernamePasswordAuthenticationToken authToken =
-                        new UsernamePasswordAuthenticationToken(
-                                username,
-                                null,
-                                authorities
-                        );
-                authToken.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-                log.debug("JWT authenticated user: {} with roles: {}", username, extractedRoles);
-            } else {
-                log.warn("Invalid JWT token for user: {}", username);
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                if (jwtService.validateToken(token)) {
+                    UsernamePasswordAuthenticationToken authToken =
+                            new UsernamePasswordAuthenticationToken(
+                                    username,
+                                    null,
+                                    authorities
+                            );
+                    authToken.setDetails(
+                            new WebAuthenticationDetailsSource().buildDetails(request)
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                    log.debug("JWT authenticated user: {} with roles: {}", username, extractedRoles);
+                } else {
+                    log.warn("Invalid JWT token for user: {}", username);
+                }
             }
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            log.warn("JWT token expired: {}", e.getMessage());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"message\":\"Token expired\"}");
+            return;
+        } catch (io.jsonwebtoken.JwtException e) {
+            log.warn("Invalid JWT token: {}", e.getMessage());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json");
+            response.getWriter().write("{\"message\":\"Invalid token\"}");
+            return;
         }
         filterChain.doFilter(request, response);
     }

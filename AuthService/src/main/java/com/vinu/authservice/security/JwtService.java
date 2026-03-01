@@ -34,7 +34,7 @@ public class JwtService {
                 .subject(userDetails.getUsername())
                 .claim("roles",roles)
                 .issuedAt(new Date())
-                .expiration(Date.from(Instant.now().plusSeconds(300)))
+                .expiration(Date.from(Instant.now().plusSeconds(900)))
                 .signWith(getSignKey())
                 .compact();
     }
@@ -51,7 +51,8 @@ public class JwtService {
         return extractClaims(token).getSubject();
     }
 
-    public List extractRoles(String token){
+    @SuppressWarnings("unchecked")
+    public List<String> extractRoles(String token){
         return extractClaims(token).get("roles",List.class);
     }
 
